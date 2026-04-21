@@ -57,12 +57,12 @@ screenshots/
 # Temporary analysis files
 *-AUDIT-REPORT.md
 *-ACTION-PLAN.md
-FULL-AUDIT-REPORT.md
-ACTION-PLAN.md
-GEO-ANALYSIS.md
-SCHEMA-REPORT.md
-SITEMAP-REPORT*.md
-VALIDATION-REPORT.md
+# FULL-AUDIT-REPORT.md
+# ACTION-PLAN.md
+# GEO-ANALYSIS.md
+# SCHEMA-REPORT.md
+# SITEMAP-REPORT*.md
+# VALIDATION-REPORT.md
 
 # Generated artifacts from audits
 charts/
@@ -138,3 +138,5 @@ scripts/generate_setup_guide.py
 
 # Generated site builds
 site/
+
+/.playwright-mcp/

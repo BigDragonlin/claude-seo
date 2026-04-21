@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Claude SEO 项目运作图</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  body { font-family: sans-serif; background: #f5f5f5; padding: 20px; }
+  h1 { color: #1e3a5f; }
+  .mermaid { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+</style>
+</head>
+<body>
+<h1>Claude SEO 项目运作图</h1>
+<div class="mermaid">
+flowchart TD
+    User(["👤 用户调用\n/seo [command] [url]"])
+
+    User --> Orchestrator["🧭 主编排层\nskills/seo/SKILL.md\n路由 + 业务类型识别"]
+
+    Orchestrator -->|"单命令模式"| SubSkills["📦 子技能层 19个\nseo-page / seo-technical / seo-content\nseo-schema / seo-sitemap / seo-images\nseo-geo / seo-local / seo-maps\nseo-hreflang / seo-plan / seo-google\nseo-backlinks / seo-programmatic ..."]
+
+    Orchestrator -->|"/seo audit 全站审计"| Parallel["⚡ 并行 Subagent 派遣\n最多同时 12 个"]
+
+    Parallel --> A1["🔧 seo-technical\n爬取/索引/安全"]
+    Parallel --> A2["📝 seo-content\nE-E-A-T/可读性"]
+    Parallel --> A3["🏷️ seo-schema\n结构化数据"]
+    Parallel --> A4["🗺️ seo-sitemap\nXML站点地图"]
+    Parallel --> A5["⚡ seo-performance\nCore Web Vitals"]
+    Parallel --> A6["📸 seo-visual\n截图/移动端渲染"]
+    Parallel --> A7["🤖 seo-geo\nAI搜索/GEO优化"]
+    Parallel --> A8["📍 seo-local\n本地SEO\n条件: 检测到本地业务"]
+    Parallel --> A9["📊 seo-google\nGSC/CrUX/GA4\n条件: 有Google API凭证"]
+    Parallel --> A10["🗺️ seo-maps\n地图智能/地理格网\n条件: 本地业务+DataForSEO"]
+
+    A1 & A2 & A3 & A4 & A5 & A6 & A7 & A8 & A9 & A10 --> Aggregator["📊 汇总评分\nSEO Health Score 0-100\nTechnical 22% | Content 23% | On-Page 20%\nSchema 10% | CWV 10% | AI 10% | Images 5%"]
+
+    SubSkills --> Aggregator
+
+    Aggregator --> Output["📋 输出优先级行动计划\nCritical → High → Medium → Low"]
+    Output -->|"可选生成"| PDF["📄 PDF报告\ngoogle_report.py\nWeasyPrint + matplotlib\nA4 Navy主题"]
+
+    Orchestrator <--> Scripts["🐍 Python脚本层 15个\npagespeed_check.py\ngsc_query.py / crux_history.py\nga4_report.py / fetch_page.py\nparse_html.py / nlp_analyze.py"]
+
+    Scripts <--> GoogleAPIs["☁️ Google APIs\nPageSpeed Insights\nSearch Console\nCrUX History API\nGA4 / Indexing API"]
+
+    Orchestrator <--> Extensions["🔌 扩展插件 可选\nDataForSEO MCP 实时SERP/关键词\nFirecrawl MCP 全站抓取\nBanana MCP AI图片生成"]
+
+    style User fill:#1e3a5f,color:#fff
+    style Orchestrator fill:#1e3a5f,color:#fff
+    style Parallel fill:#2d6a4f,color:#fff
+    style Aggregator fill:#b8860b,color:#fff
+    style Output fill:#2d6a4f,color:#fff
+    style PDF fill:#2d6a4f,color:#fff
+    style GoogleAPIs fill:#4285f4,color:#fff
+    style Extensions fill:#6a2d6a,color:#fff
+</div>
+<script>mermaid.initialize({ startOnLoad: true, theme: 'default' });</script>
+</body>
+</html>
