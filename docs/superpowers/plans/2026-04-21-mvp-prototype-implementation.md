@@ -133,6 +133,11 @@ htmlcov/
 *.key
 secrets/
 
+# Local smoke tests & ad-hoc notes (may contain API keys / endpoint URLs)
+notes/
+scripts/smoke_*.py
+/tmp/
+
 # Build artifacts
 dist/
 build/
@@ -239,9 +244,12 @@ git commit -m "chore: initialize wrapper repository scaffold"
 - [ ] **Step 1: Add submodule locked to v1.7.2**
 
 ```bash
-git submodule add -b v1.7.2 https://github.com/AgriciDaniel/claude-seo.git claude-seo
+git submodule add https://github.com/AgriciDaniel/claude-seo.git claude-seo
 cd claude-seo && git checkout v1.7.2 && cd ..
+git add claude-seo
 ```
+
+(`-b` takes a branch, not a tag. Clone the default branch first, then `checkout` the tag — Git records the exact commit pointed to by v1.7.2 in the submodule entry.)
 
 - [ ] **Step 2: Verify submodule resolved to v1.7.2**
 
@@ -496,17 +504,24 @@ git commit -m "feat(config): env var loader with fail-fast validation"
 - Create: `src/wrapper/url_validator.py`
 - Create: `tests/test_url_validator.py`
 
-**Context:** Spec §4.4 step 3 mandates reusing `claude-seo/scripts/google_auth.py::validate_url()` for SSRF protection. This module just imports and re-exports it, plus adds a thin wrapper that raises a domain-specific exception.
+**Context:** Spec §4.4 step 3 mandates reusing `claude-seo/scripts/google_auth.py::validate_url()` for SSRF protection. This module delegates SSRF checks to upstream and tightens to **https-only** on top (spec §5.1 says "HTTPS、非内网、能解析").
 
-- [ ] **Step 1: Verify upstream `validate_url` signature**
+**Important — upstream contract (verified from source at `claude-seo/scripts/google_auth.py:366`):**
+- Signature: `validate_url(url: str) -> bool`
+- Returns `True` for valid public http/https URLs; `False` for anything else
+- **Never raises** — it's a pure predicate
+- Accepts both `http` and `https` (we enforce https-only in our wrapper)
+- Blocks: non-http(s) schemes, missing hostname, `localhost` / `127.0.0.1` / `0.0.0.0` / `::1`, GCP metadata, RFC1918 private ranges
+
+- [ ] **Step 1: Confirm upstream signature before coding**
 
 ```bash
 grep -n "def validate_url" claude-seo/scripts/google_auth.py
 ```
 
-Expected: prints the function definition line. Read the function body to confirm: it raises `ValueError` on invalid, returns normalized URL on success.
+Expected: `366:def validate_url(url: str) -> bool:`
 
-If the signature differs from that contract, update tests and implementation in Steps 3 / 4 accordingly.
+If the line number or signature has drifted (upstream version change), **stop and read the full function body** before continuing.
 
 - [ ] **Step 2: Write failing tests**
 
@@ -523,20 +538,21 @@ from wrapper.url_validator import validate, InvalidURLError
     "https://sub.example.com",
 ])
 def test_validate_accepts_public_https(url):
-    assert validate(url).startswith("https://")
+    # validate() returns the original URL unchanged on success
+    assert validate(url) == url
 
 
-@pytest.mark.parametrize("url", [
-    "http://example.com",           # http not https
-    "ftp://example.com",            # wrong scheme
-    "https://localhost",            # loopback
-    "https://127.0.0.1",            # loopback IP
-    "https://10.0.0.1",             # private net
-    "https://169.254.169.254",      # GCP/AWS metadata
-    "not-a-url",                    # not a URL
-    "",                             # empty
+@pytest.mark.parametrize("url,reason", [
+    ("http://example.com",           "http-not-https"),           # our wrapper tightens to https-only
+    ("ftp://example.com",            "wrong-scheme"),             # upstream rejects
+    ("https://localhost",            "loopback-hostname"),        # upstream rejects
+    ("https://127.0.0.1",            "loopback-ip"),              # upstream rejects
+    ("https://10.0.0.1",             "rfc1918-private"),          # upstream rejects
+    ("https://169.254.169.254",      "link-local-metadata"),      # upstream rejects (is_link_local)
+    ("not-a-url",                    "no-scheme"),                # upstream rejects
+    ("",                             "empty"),                    # wrapper rejects before delegating
 ])
-def test_validate_rejects_unsafe_url(url):
+def test_validate_rejects_unsafe_url(url, reason):
     with pytest.raises(InvalidURLError):
         validate(url)
 ```
@@ -554,17 +570,20 @@ Expected: all FAILED with `ModuleNotFoundError`.
 ```python
 """SSRF-safe URL validation.
 
-Delegates to claude-seo/scripts/google_auth.py::validate_url — we do NOT
-reimplement the checks (CLAUDE.md mandates reusing that function).
-Adds domain-specific InvalidURLError so callers don't catch bare ValueError.
+Delegates the hard SSRF checks to claude-seo/scripts/google_auth.py::validate_url
+(CLAUDE.md mandates reusing that function — we don't reimplement). Adds:
+  - https-only enforcement (upstream accepts both http and https; MVP tightens)
+  - InvalidURLError so callers don't catch bare ValueError
+  - empty/non-string guard before delegating
 """
 
 from __future__ import annotations
 
 import sys
 from pathlib import Path
+from urllib.parse import urlparse
 
-# Insert claude-seo scripts dir on path so we can import it
+# Insert claude-seo scripts dir on path so we can import google_auth by module name
 _CLAUDE_SEO_SCRIPTS = Path(__file__).resolve().parents[2] / "claude-seo" / "scripts"
 if str(_CLAUDE_SEO_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_CLAUDE_SEO_SCRIPTS))
@@ -577,13 +596,26 @@ class InvalidURLError(ValueError):
 
 
 def validate(url: str) -> str:
-    """Return a normalized URL if safe; raise InvalidURLError otherwise."""
-    if not url or not isinstance(url, str):
+    """Return the URL unchanged if safe; raise InvalidURLError otherwise.
+
+    Contract:
+      - Input must be a non-empty string
+      - Scheme must be 'https' (MVP tightening over upstream)
+      - Upstream validate_url must return True (handles private/loopback/metadata)
+    """
+    if not isinstance(url, str) or not url:
         raise InvalidURLError(f"URL must be a non-empty string: {url!r}")
-    try:
-        return google_auth.validate_url(url)
-    except ValueError as e:
-        raise InvalidURLError(str(e)) from e
+
+    scheme = urlparse(url).scheme
+    if scheme != "https":
+        raise InvalidURLError(f"URL must use https scheme, got {scheme!r}: {url!r}")
+
+    # Upstream returns bool — True=safe, False=unsafe; it never raises.
+    if not google_auth.validate_url(url):
+        raise InvalidURLError(
+            f"URL failed SSRF check (loopback / private / metadata / malformed): {url!r}"
+        )
+    return url
 ```
 
 - [ ] **Step 5: Run tests — expect pass**
@@ -592,7 +624,11 @@ def validate(url: str) -> str:
 PYTHONPATH=src pytest tests/test_url_validator.py -v
 ```
 
-Expected: all tests pass. If any of the SSRF cases let through a bad URL, **stop** — the upstream `validate_url` is weaker than expected and the spec's SSRF assumption is broken. Raise this with the user before continuing.
+Expected: all 11 parametrized cases pass (3 accept + 8 reject).
+
+If any **accept** case raises (legal https URL rejected), upstream `validate_url` has become stricter — check if the hostname we picked resolves to a private IP from the dev machine. Swap the test host to `https://example.org`.
+
+If any **reject** case is let through, upstream SSRF is weaker than documented — **stop and escalate**; spec §6 R1/R2 SSRF assumption is broken.
 
 - [ ] **Step 6: Commit**
 
@@ -778,7 +814,19 @@ git commit -m "feat(workspace): per-request dir lifecycle with symlinked skills/
 
 **Context:** Spec §4.4 step 5. This module wraps `claude-agent-sdk.query()`. Unit tests use `unittest.mock` to avoid real LLM calls. Real end-to-end verification happens in Task 8.
 
-- [ ] **Step 1: Write failing tests**
+> ⚠️ **MVP-only simplification (Phase 2 TODO)**: This module writes to `os.environ` — a **process-level** mutation. In MVP we run sync/single-request, so it's safe. When Phase 2 introduces concurrency (parallel FastAPI requests with different configs), this will cause config bleed between requests. At that point, migrate to per-call env isolation: either `ClaudeAgentOptions(env=...)` if the SDK supports it, or spawn a subprocess with explicit env.
+
+- [ ] **Step 1: Configure pytest-asyncio (do this BEFORE writing async tests)**
+
+Under `[tool.pytest.ini_options]` in `pyproject.toml`, add:
+
+```toml
+asyncio_mode = "auto"
+```
+
+Without this, async tests get silently skipped with a warning instead of running.
+
+- [ ] **Step 2: Write failing tests**
 
 `tests/test_runner.py`:
 
@@ -834,14 +882,6 @@ async def test_run_audit_propagates_sdk_errors(tmp_path):
             await run_audit(url="https://example.com", job_dir=job_dir, config=cfg)
 ```
 
-- [ ] **Step 2: Add pytest-asyncio config to `pyproject.toml`**
-
-Under `[tool.pytest.ini_options]`, add:
-
-```toml
-asyncio_mode = "auto"
-```
-
 - [ ] **Step 3: Run to verify failure**
 
 ```bash
@@ -881,8 +921,10 @@ _MAX_TURNS = 30
 
 
 async def run_audit(url: str, job_dir: Path, config: Config) -> List[Dict[str, Any]]:
-    # Ensure the child process sees our API config. These env vars are inherited
-    # by claude-agent-sdk's subprocess (Claude Code CLI). See spec §6 R6.1.
+    # ⚠️ MVP-only: process-level env mutation (see task header note).
+    # Ensures the child process (Claude Code CLI) sees our API config.
+    # Spec §6 R6.1 requires this passthrough be verified Day 2 (Task 8).
+    # Phase 2 must move to per-call env isolation before enabling concurrency.
     os.environ["ANTHROPIC_BASE_URL"] = config.base_url
     os.environ["ANTHROPIC_API_KEY"] = config.api_key
     if config.model:
@@ -933,7 +975,13 @@ pip install -r requirements.txt
 npm install -g @anthropic-ai/claude-code
 ```
 
-- [ ] **Step 2: Write a tiny check script `scripts/smoke_sdk.py` (repo-local, not committed)**
+- [ ] **Step 2: Create the `scripts/` directory and write a tiny check script (not committed)**
+
+```bash
+mkdir -p scripts
+```
+
+`scripts/smoke_sdk.py` (gitignored via `scripts/smoke_*.py` rule in Task 1):
 
 ```python
 import asyncio, os
@@ -982,7 +1030,9 @@ ln -s $(pwd)/claude-seo/agents /tmp/seo-smoke/.claude/agents
 mkdir -p /tmp/seo-smoke/output
 ```
 
-- [ ] **Step 2: Write a smoke runner `scripts/smoke_seo_page.py` (gitignored)**
+- [ ] **Step 2: Write a smoke runner (`scripts/` already exists from Task 8)**
+
+`scripts/smoke_seo_page.py` (gitignored):
 
 ```python
 import asyncio, os
@@ -1015,7 +1065,11 @@ Expected: run completes within 3 minutes; `/tmp/seo-smoke/output/` contains at l
 
 If the SDK refused to load skills through symlinks, redo Step 1 with `cp -r` instead of `ln -s`. Whichever works, record the choice for Task 11.
 
-- [ ] **Step 5: Record outcome in `notes/day3-smoke.md`** (gitignored). Include token usage, elapsed time, quality impression.
+- [ ] **Step 5: Record outcome AND first real SDK message shape in `notes/day3-smoke.md`** (gitignored).
+
+Include:
+- Token usage, elapsed time, quality impression
+- **Full `repr()` of the first assistant message dict** printed by the smoke script — this is the ground truth for Task 10's `_extract_text` parsing. Task 10 reads this note to know exactly which keys to look for instead of guessing.
 
 ---
 
@@ -1198,6 +1252,8 @@ git commit -m "feat(output): file-first + message-stream fallback report extract
 - Create: `tests/test_api.py`
 
 **Context:** Spec §4.4 full lifecycle. Wires config → URL validation → workspace → runner → output parser → response. One endpoint only.
+
+> **Phase 2 TODO (non-blocking)**: `@app.on_event("startup")` is deprecated in newer FastAPI versions in favor of the `lifespan` context manager. MVP uses the old form because it's simpler and still works; migrate when touching this file in Phase 2.
 
 - [ ] **Step 1: Write failing tests**
 
@@ -1437,7 +1493,24 @@ curl -s -X POST http://127.0.0.1:8000/v1/audit \
 
 Expected: HTTP 400 with `InvalidURL` message.
 
-- [ ] **Step 4: Record metrics in `notes/day4-e2e.md`** (gitignored): elapsed time, token usage if visible in logs, report first 20 lines, any warnings.
+- [ ] **Step 4: Auto-log both runs to `notes/day4-e2e.md`** (gitignored)
+
+```bash
+mkdir -p notes
+{
+  echo "=== Happy path $(date -Iseconds) ==="
+  curl -s -X POST http://127.0.0.1:8000/v1/audit \
+    -H "Content-Type: application/json" \
+    -d '{"url":"https://example.com"}' | jq .
+  echo
+  echo "=== Rejection path $(date -Iseconds) ==="
+  curl -s -X POST http://127.0.0.1:8000/v1/audit \
+    -H "Content-Type: application/json" \
+    -d '{"url":"http://localhost"}' | jq .
+} | tee -a notes/day4-e2e.md
+```
+
+Also append manually: elapsed time observations, any warnings from server logs, first 20 lines of the report.
 
 - [ ] **Step 5: No commit needed** (smoke testing, not code changes).
 
@@ -1606,6 +1679,8 @@ These violate G1/G2/G3 already — no point deploying to CF until local works.
 
 **Context:** CF Containers are fronted by a Worker + a Durable Object. This task sets up the minimum viable Worker that forwards `POST /v1/audit` to the container.
 
+> ⚠️ **Before starting this task** — open https://developers.cloudflare.com/containers/ and verify the current `[[containers]]` TOML schema + `DurableObject` + `container` API surface. CF Containers is public beta and schema fields (`class_name`, `image`, `instance_type`, `max_instances`) have been renamed in past releases. The snippets below reflect **2026-04 state at spec writing**; if `wrangler deploy` fails with a schema error, checking current docs is the first debug step.
+
 - [ ] **Step 1: Install Wrangler**
 
 ```bash
@@ -1752,10 +1827,17 @@ BASE=https://<your-worker>.workers.dev
 
 - [ ] **Step 2: Compute same stats as Task 15**
 
-- [ ] **Step 3: Compare CF vs local numbers** — per spec §5.1 Stage B:
-  - Elapsed time may be up to +30% over local (cold start overhead)
-  - Content diff from local should be ≤ 5%
-  - Quality score must not regress
+- [ ] **Step 3: Apply the absolute pass thresholds (same as Task 15 Step 4)**
+
+  CF must meet ALL of these, on its own (not just "relatively close to local"):
+  - Pass rate ≥ 80%
+  - P95 elapsed ≤ 3 minutes (180000 ms)
+  - Mean quality ≥ 6/10
+
+  AND the CF-vs-local comparison (spec §5.1 Stage B):
+  - Elapsed time ≤ +30% over local p95 (cold-start budget)
+  - Report content diff from local ≤ 5% (use a simple word-count or line-count diff)
+  - Quality score must not regress vs. local
 
 - [ ] **Step 4: If any check fails, stop and escalate** — do NOT proceed to Go/No-Go with failing CF data.
 
