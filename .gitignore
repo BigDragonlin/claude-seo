@@ -100,6 +100,10 @@ seo command demo.gif
 Google-SEO-Report-*.html
 Google-SEO-Report-*.pdf
 
+# Claude Code local config (project-specific permissions, not for repo)
+.claude/
+.superpowers/
+
 # Site-specific analysis outputs
 LOCAL-SEO-ANALYSIS-*.md
 LOCAL-SEO-ANALYSIS-*.html
@@ -110,6 +114,23 @@ dirigo-seo-images-review.html
 
 # Site-specific scripts
 indexnow-submit.sh
+
+# SEO Drift Monitor (SQLite baselines)
+*.db
+
+# Generated cluster maps
+cluster-map.html
+CLUSTER-REPORT*.md
+
+# Generated SXO reports
+SXO-ANALYSIS*.md
+
+# Generated drift reports
+DRIFT-REPORT*.md
+DRIFT-COMPARISON*.html
+
+# Generated e-commerce reports
+ECOMMERCE-ANALYSIS*.md
 
 # Generated setup guides
 Google-API-Setup-Guide-*.html

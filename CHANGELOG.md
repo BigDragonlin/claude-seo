@@ -5,6 +5,84 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.0] - 2026-04-14
+
+### Added
+- **seo-cluster**: SERP-based semantic topic clustering for content architecture (skill + 3 references + interactive cluster-map.html visualization + agent). Contributed by Lutfiya Miller (Pro Hub Challenge Winner).
+- **seo-sxo**: Search Experience Optimization — reads SERPs backwards to detect page-type mismatches, derives user stories, scores pages from persona perspectives (skill + 4 references + agent). Contributed by Florian Schmitz.
+- **seo-drift**: SEO drift monitoring — baseline, diff, and track changes to on-page SEO with 17 comparison rules across 3 severity levels. SQLite persistence (skill + 1 reference + agent + 4 Python scripts). Contributed by Dan Colta. Security-hardened: all curl usage eliminated, SSRF protection enforced.
+- **seo-ecommerce**: E-commerce SEO — Google Shopping intelligence, Amazon marketplace analysis, product schema validation (skill + 1 reference + agent + 2 Python scripts). Contributed by Matej Marjanovic.
+- **DataForSEO cost guardrails**: `scripts/dataforseo_costs.py` with threshold-based approval, session budget tracking, daily spend summaries. `references/cost-tiers.md` pricing table. Contributed by Matej Marjanovic.
+- **seo-hreflang cultural profiles**: 4 cultural adaptation profiles (DACH, Francophone, Hispanic, Japanese) with locale format tables, content parity audit, and freshness tracking. 3 new reference files. Contributed by Chris Muller.
+- **CONTRIBUTORS.md**: Community credits file for Pro Hub Challenge and PR contributors
+- **AGENTS.md**: Multi-platform discovery file for Cursor/Antigravity (concept by Matej Marjanovic, rewritten for v1.9.0)
+- **Schema templates**: Product (Full E-commerce) and ItemList (hub/pillar pages) added to `schema/templates.json`
+- 5 new commands: `/seo cluster`, `/seo sxo`, `/seo drift baseline|compare|history`, `/seo ecommerce`
+
+### Changed
+- Orchestrator spawns up to 15 subagents (was 12): +seo-cluster, +seo-sxo, +seo-drift, +seo-ecommerce
+- seo-hreflang SKILL.md enhanced with Cultural Adaptation Assessment, Content Parity Audit, and Locale Format Validation sections
+- seo-dataforseo SKILL.md enhanced with Cost Guardrails section requiring cost checks before API calls
+- All 23 SKILL.md files stamped to v1.9.0
+- Install scripts (install.sh, install.ps1) pinned to v1.9.0
+- plugin.json updated with 9 new keywords
+
+### Community
+- Pro Hub Challenge: Lutfiya Miller (Winner - Semantic Cluster Engine), Florian Schmitz (SXO Skill), Dan Colta (SEO Drift Monitor), Chris Muller (Multi-lingual SEO), Matej Marjanovic (E-commerce + Cost Config + Platform Support), Benjamin Samar (SEO Dungeon - reviewed)
+- 5 out of 6 submissions scored Proficient or above
+- See CONTRIBUTORS.md for full credits and original repo links
+
+## [1.8.2] - 2026-04-10
+
+### Added
+- **Ukrainian localization**: first i18n — README, CONTRIBUTING, PRIVACY, SECURITY, INSTALLATION, TROUBLESHOOTING translated (PR #50)
+- **Firecrawl extension section** in README with install and example commands
+- **Backlink API privacy disclosures** in PRIVACY.md (Moz, Bing Webmaster, Common Crawl, verify crawler)
+- 4 missing commands added to README table: `/seo backlinks`, `/seo firecrawl`, `/seo dataforseo`, `/seo image-gen`
+- 6 missing scripts added to CI syntax check (backlinks_auth, moz_api, bing_webmaster, commoncrawl_graph, verify_backlinks, validate_backlink_report)
+- 6 missing skill directories added to INSTALLATION.md manual uninstall list
+
+### Fixed
+- **Install scripts pinned to stale version**: REPO_TAG bumped from v1.7.2 to v1.8.2 in install.sh and install.ps1 — new curl-based installs now get the current release
+- **Supply chain risk in docs**: removed deprecated `irm | iex` pattern from docs/INSTALLATION.md, replaced with safe `git clone` + `powershell -File` method
+- **Version sync**: pyproject.toml (1.7.2→1.8.2), CITATION.cff (1.7.2→1.8.2, date 2026-04-10), all 19 SKILL.md files
+- **Python requirement**: pyproject.toml corrected from `>=3.11` to `>=3.10` (matches README and install scripts)
+- **README architecture counts**: sub-skills "15+2" → "16+3", agents "10+2" → "11+2"
+- **Orchestrator SKILL.md**: stale count "15+2" → "16+3" at line 119
+- **CLAUDE.md**: sub-skill count 17→16 core, script count "20+2" → "21+2"
+- **Extension install hang**: merged PR #43 — npx pre-warm no longer starts MCP server binary
+
+### Community
+- Merged PR #43 (fix stuck extension install) by @olivierroy
+- Merged PR #45 (correct sub-skills count) by @MalteBerlin
+- Merged PR #50 (Ukrainian localization) by @edocltd
+- Closed issue #42 (marketplace discovery — resolved)
+- Reviewed PRs #47, #46, #30, #36 with detailed feedback
+
+## [1.8.1] - 2026-04-06
+
+### Added
+- **Google Images SERP**: `/seo dataforseo serp-images <keyword>` command for competitive image search analysis
+- **Image SERP Analysis**: `/seo images serp <keyword>` cross-skill command combining DataForSEO image results with on-page audit
+- **Image File Optimization**: `/seo images optimize <path>` for WebP/AVIF conversion, IPTC/XMP metadata injection, responsive variants, and compression
+- **Image ranking factors table**: documents what matters (alt text, filename, page context) vs what does not (EXIF camera data, IPTC keywords)
+- **DataForSEO field-config**: `serp.items.images` filter with 10 SEO-relevant fields (type, rank, title, alt, url, source_url, image_url, domain, encoded_url)
+- **Tool catalog reference**: `skills/seo-dataforseo/references/tool-catalog.md` for 35+ utility MCP tools (moved from inline list)
+- **Table of Contents**: added to `seo-image-gen/references/prompt-engineering.md` (326 lines, per >300 line standard)
+- Plugin keywords: `image-serp`, `google-images` added to plugin.json
+
+### Fixed
+- **Version mismatch**: unified all 19 SKILL.md files, plugin.json, and CLAUDE.md to v1.8.0 (was 1.7.0/1.7.2/1.8.0 three-way split)
+- **Broken reference path**: seo-backlinks now correctly points to `skills/seo/references/backlink-quality.md` (shared reference)
+- **Hardcoded absolute paths**: removed `~/.claude/skills/` from `agents/seo-visual.md`, `agents/seo-schema.md`, `skills/seo-image-gen/SKILL.md`, and banana extension copy (now use plugin-relative paths)
+- **seo-dataforseo line count**: moved 35-line utility tools list to reference file, reduced from 416 to 380 lines
+
+### Changed
+- seo-images description: added trigger phrases for image SERP, metadata, WebP conversion
+- seo-dataforseo description: added "Google Images" and image ranking trigger phrases
+- seo orchestrator: updated images command to reflect new SERP + optimize capabilities
+- CLAUDE.md: updated plugin version reference, images command description
+
 ## [1.7.2] - 2026-03-30
 
 ### Added

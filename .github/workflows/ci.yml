@@ -35,4 +35,17 @@ jobs:
           python3 -m py_compile scripts/youtube_search.py
           python3 -m py_compile scripts/nlp_analyze.py
           python3 -m py_compile scripts/keyword_planner.py
-          echo "All 15 scripts passed syntax check"
+          python3 -m py_compile scripts/backlinks_auth.py
+          python3 -m py_compile scripts/moz_api.py
+          python3 -m py_compile scripts/bing_webmaster.py
+          python3 -m py_compile scripts/commoncrawl_graph.py
+          python3 -m py_compile scripts/verify_backlinks.py
+          python3 -m py_compile scripts/validate_backlink_report.py
+          python3 -m py_compile scripts/dataforseo_costs.py
+          python3 -m py_compile scripts/dataforseo_merchant.py
+          python3 -m py_compile scripts/dataforseo_normalize.py
+          python3 -m py_compile scripts/drift_baseline.py
+          python3 -m py_compile scripts/drift_compare.py
+          python3 -m py_compile scripts/drift_report.py
+          python3 -m py_compile scripts/drift_history.py
+          echo "All 28 scripts passed syntax check"

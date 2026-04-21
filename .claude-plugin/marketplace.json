@@ -1,5 +1,6 @@
 {
-  "name": "claude-seo-marketplace",
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "agricidaniel-seo",
   "owner": {
     "name": "AgriciDaniel"
   },
@@ -10,7 +11,7 @@
     {
       "name": "claude-seo",
       "source": "./",
-      "description": "Comprehensive SEO analysis skill for Claude Code. 19 sub-skills covering technical SEO, E-E-A-T, schema markup, GEO/AEO, backlinks, local SEO, maps intelligence, Google API integration (GSC, PageSpeed, CrUX, GA4), and PDF/Excel reporting."
+      "description": "Comprehensive SEO analysis skill for Claude Code. 20 core sub-skills covering technical SEO, E-E-A-T, schema markup, image optimization, GEO/AEO, backlinks, local SEO, maps intelligence, semantic topic clustering, SXO, SEO drift monitoring, e-commerce SEO, international SEO with cultural profiles, Google API integration, and PDF reporting."
     }
   ]
 }
