@@ -364,7 +364,7 @@ MVP 通过后，下一阶段考虑：
 
 以下问题在 spec review 后或实施过程中再定，本 spec 不锁死：
 
-- [ ] wrapper 仓库托管位置（GitHub public / private）
+- [x] wrapper 仓库托管位置：**GitHub Private**（2026-04-21 拍板）。MVP 阶段试错期保持私有，无业务秘密但也无公开收益；Phase 2 视营销策略再决定是否翻 public。Docker build / CF 部署使用 PAT 或 Deploy Key 拉取（不影响部署）
 - [ ] 运维方首选的 endpoint 搭建方案（LiteLLM 还是 one-api 或 new-api）——**不影响容器开发**，但影响 Day 0 的运维方工作
 - [ ] CF Container 实例规格（256 MB / 1 GB / 4 GB）
 - [ ] CI/CD 是否在 MVP 阶段引入（倾向不引入，手动 push 镜像）
