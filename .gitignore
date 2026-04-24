@@ -140,3 +140,4 @@ scripts/generate_setup_guide.py
 site/
 
 /.playwright-mcp/
+.worktrees/
