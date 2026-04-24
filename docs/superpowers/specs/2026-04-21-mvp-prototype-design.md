@@ -1,4 +1,4 @@
-# Claude SEO SaaS 集成 — MVP 原型设计文档
+﻿# Claude SEO SaaS 集成 — MVP 原型设计文档
 
 | 字段 | 值 |
 |---|---|
@@ -365,3 +365,4 @@ MVP 通过后，下一阶段考虑：
 - [x] CF Container 实例规格：**1 GB 起步**（2026-04-21 拍板）。Chromium + Python + Node 打底，256 MB 不够；4 GB 浪费；Day 5 实测后若不够再升
 - [x] CI/CD 是否在 MVP 阶段引入：**不引入**（2026-04-21 拍板）。手动 `docker push` 足够；Phase 2 再自动化
 - [x] README 是否给 "endpoint 搭建教程链接"：**不给**（2026-04-21 拍板）。README 只描述环境变量契约，不涉及 endpoint 怎么来
+
