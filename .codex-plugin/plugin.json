@@ -1,0 +1,62 @@
+{
+  "name": "claude-seo",
+  "version": "2.0.0",
+  "description": "Comprehensive SEO analysis skills packaged for OpenAI Codex. Includes technical SEO, content quality, schema, AI search, local SEO, ecommerce SEO, international SEO, Google APIs, and extension workflows.",
+  "author": {
+    "name": "AgriciDaniel",
+    "email": "agricidaniel@gmail.com",
+    "url": "https://github.com/AgriciDaniel"
+  },
+  "homepage": "https://claude-seo.md",
+  "repository": "https://github.com/AgriciDaniel/claude-seo",
+  "license": "MIT",
+  "keywords": [
+    "seo",
+    "technical-seo",
+    "content-quality",
+    "schema-markup",
+    "core-web-vitals",
+    "local-seo",
+    "geo",
+    "ai-search",
+    "sitemap",
+    "image-optimization",
+    "hreflang",
+    "google-search-console",
+    "pagespeed",
+    "crux",
+    "ga4",
+    "backlinks",
+    "semantic-clustering",
+    "topic-clusters",
+    "sxo",
+    "drift-monitoring",
+    "ecommerce-seo",
+    "mcp-extensions",
+    "headless-rendering",
+    "ssrf-safe-fetchers",
+    "ai-citation-optimization"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Claude SEO",
+    "shortDescription": "SEO audit and strategy skills for Codex",
+    "longDescription": "Claude SEO packaged as a Codex plugin. Codex can load the existing skills for site audits, page analysis, technical SEO, content quality, schema markup, AI search readiness, local SEO, ecommerce SEO, international SEO, Google API workflows, and related SEO planning tasks.",
+    "developerName": "AgriciDaniel",
+    "category": "Productivity",
+    "capabilities": [
+      "SEO audits",
+      "Technical SEO analysis",
+      "Content and schema review",
+      "Local script guidance"
+    ],
+    "defaultPrompt": [
+      "Run an SEO audit for https://example.com",
+      "Check technical SEO and schema for this page",
+      "Create an SEO action plan for a SaaS site"
+    ],
+    "websiteURL": "https://claude-seo.md",
+    "privacyPolicyURL": "https://github.com/AgriciDaniel/claude-seo/blob/main/PRIVACY.md",
+    "brandColor": "#1E3A5F"
+  }
+}
